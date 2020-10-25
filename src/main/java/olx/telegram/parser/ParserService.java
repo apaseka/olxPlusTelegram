@@ -13,19 +13,20 @@ import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Data
 @Scope(value = "prototype", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class ParserService {
 
-    public static Set<String> identity = new HashSet<>();
-
+    public static Map<String, List<AdvertisementDashboard>> identity = new HashMap<>();
+    public Integer loop;
     AdvertisementDashboardRepository dashboardRepository;
     BotService botService;
-    public Integer loop;
     private String url;
 
     @Autowired
@@ -36,9 +37,8 @@ public class ParserService {
 
     public void parse(String url) {
         this.url = url;
-        loop = Config.urlToParse.get(url);
+        loop = Config.urlToParse.get(url) == null ? 0 : Config.urlToParse.get(url);
         loop++;
-        Config.urlToParse.put(url, loop);
 
         try {
             Document doc = Jsoup.connect(this.url).get();
@@ -55,7 +55,9 @@ public class ParserService {
                 final String detailsHref = advertisement.select("a[href].detailsLink").first().attr("href");
                 final String advTitle = advertisement.select("a[class].link.linkWithHash.detailsLink").first().text();
                 final String mainImage = advertisement.select("img[class].fleft").attr("src");
-                final String location = advertisement.select("p[class].lheight16").text();
+                final Elements select = advertisement.select("p[class].lheight16");
+                final String time = select.select("span").get(1).text();
+                final String location = select.select("span").get(0).text();
 
                 final AdvertisementDashboard shortAdvertisementFromDashboard = AdvertisementDashboard.builder()
                         .advTitle(advTitle)
@@ -68,18 +70,22 @@ public class ParserService {
                         .searchUrl(this.url)
                         .imageUrl(mainImage)
                         .location(location)
+                        .time(time)
                         .build();
 
-                if (!identity.contains(externalId)) {
-                    identity.add(externalId);
-                    dashboardRepository.save(shortAdvertisementFromDashboard);
-
+                boolean matchPrice = false;
+                if (!identity.containsKey(externalId) || (identity.containsKey(externalId) && (matchPrice = checkPrice(price, identity.get(externalId))))) {
                     if (loop > 1) {
-
-                        botService.sendMessage("\r\n" + mainImage + "\r\n" + detailsHref + "\r\n" + price + "\r\n" + advTitle);
-                        System.out.println(price + "	" + advTitle);
-
+                        if (matchPrice) {
+                            botService.sendMessage("\r\n" + mainImage + "\r\n" + detailsHref + "\r\n" + price + "	ЦІНУ ЗМІНЕНО" + "\r\n" + advTitle + "\r\n" + location + "\r\n" + time);
+                        } else {
+                            botService.sendMessage("\r\n" + mainImage + "\r\n" + detailsHref + "\r\n" + price + "\r\n" + advTitle + "\r\n" + location + "\r\n" + time);
+                        }
                     }
+                    ParserService.identity.compute(externalId, (k, v) -> (v == null) ? new ArrayList<>() : v)
+                            .add(shortAdvertisementFromDashboard);
+                    dashboardRepository.save(shortAdvertisementFromDashboard);
+                    System.out.println(price + "	" + advTitle);
                 }
             }
 
@@ -89,6 +95,11 @@ public class ParserService {
 
         System.out.printf("%s %d \r\n%s\r\n", LocalDateTime.now(), loop, url);
         System.out.println("list size: " + identity.size() + "\r\n");
+        Config.urlToParse.put(url, loop);
 
+    }
+
+    private boolean checkPrice(String price, List<AdvertisementDashboard> advertisementDashboardList) {
+        return advertisementDashboardList.stream().noneMatch(e -> e.getPrice().equals(price));
     }
 }

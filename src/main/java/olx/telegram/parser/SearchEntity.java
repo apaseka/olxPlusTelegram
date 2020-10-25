@@ -19,12 +19,12 @@ import javax.persistence.Id;
 @EqualsAndHashCode
 public class SearchEntity {
 
+    public static String priceFrom = "10";
+    public static String priceTo = "1000";
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String name;
     private String url;
-    public static String priceFrom="10";
-    public static String priceTo="1000";
+    private Boolean active = true;
 }

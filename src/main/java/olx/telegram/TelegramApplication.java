@@ -10,6 +10,8 @@ import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 
+import java.util.ArrayList;
+
 @SpringBootApplication
 public class TelegramApplication {
 
@@ -31,11 +33,11 @@ public class TelegramApplication {
             System.out.println("RegisterBot OK");
 
             dashboardRepository.findAll().forEach(e -> {
-                ParserService.identity.add(e.getExternalId());
-                ParserService.identity.add(e.getAdvTitle());
+                ParserService.identity.compute(e.getExternalId(), (k, v) -> (v == null) ? new ArrayList<>() : v)
+                        .add(e);
             });
 
-            searchRepository.findAll().forEach(e -> Config.urlToParse.put(e.getUrl(), 0));
+            searchRepository.findAllByActiveIsTrue().forEach(e -> Config.urlToParse.put(e.getUrl(), 0));
 
         } catch (Exception te) {
             System.out.println("RegisterBot FAIL");

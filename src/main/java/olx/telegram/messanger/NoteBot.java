@@ -25,11 +25,15 @@ public class NoteBot extends TelegramLongPollingBot {
 
     @Override
     public String getBotUsername() {
-        return "";
+        String bot = "alex_test2_bot";
+//        String bot="vovka_olx_bot";
+        System.out.println(bot);
+        return bot;
     }
 
     @Override
     public String getBotToken() {
-        return "";
+        return "870428956:AAHpZ6laLcR-08a-S2sQCLHEgwLDKPiN8zw";
+//        return "1325049711:AAHH7Ta15qGEIzMn8rbfPYvgGSWApN6itrE";
     }
 }

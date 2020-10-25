@@ -13,16 +13,15 @@ import java.util.Map;
 @Configuration
 public class Config {
 
+    public static Map<String, Integer> urlToParse = new HashMap();
     @Autowired
     ParserService parserService;
-
-    public static Map<String, Integer> urlToParse = new HashMap();
 
     @Scheduled(fixedDelay = 1000 * 60 * 3)
     public void doSearch() {
         if (!urlToParse.isEmpty())
-            urlToParse.forEach((k,v) -> 
-                parserService.parse(k)             
+            urlToParse.forEach((k, v) ->
+                    parserService.parse(k)
             );
     }
 }
