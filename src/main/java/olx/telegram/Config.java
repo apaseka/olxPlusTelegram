@@ -24,4 +24,5 @@ public class Config {
                     parserService.parse(k)
             );
     }
+
 }
